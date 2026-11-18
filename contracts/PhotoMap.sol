@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 // PhotoMap prototype: users pin a photo to a map location.
@@ -12,11 +11,17 @@ contract PhotoMap {
 
     Photo[] public photos;
 
+    // photo id => wallet => already liked?
+    mapping(uint => mapping(address => bool)) public hasLiked;
+
     function addPhoto(string memory _ipfsHash, string memory _location) public {
         photos.push(Photo(msg.sender, _ipfsHash, _location, 0));
     }
 
     function likePhoto(uint _id) public {
+        require(_id < photos.length, "Photo does not exist");
+        require(!hasLiked[_id][msg.sender], "Already liked this photo");
+        hasLiked[_id][msg.sender] = true;
         photos[_id].likes++;
     }
 

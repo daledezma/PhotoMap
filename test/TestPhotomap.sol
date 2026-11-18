@@ -37,10 +37,24 @@ contract TestPhotoMap {
     function testLikePhotoIncrementsLikes() public {
         photoMap.addPhoto("QmTestHash456", "42.6792,-88.2765");
         photoMap.likePhoto(0);
-        photoMap.likePhoto(0);
 
         (, , , uint likes) = photoMap.photos(0);
-        Assert.equal(likes, 2, "Photo should have 2 likes");
+        Assert.equal(likes, 1, "Photo should have 1 like");
+        Assert.isTrue(photoMap.hasLiked(0, address(this)), "Liker should be recorded");
+    }
+
+    // Test 4: the same wallet cannot like a photo twice.
+    function testCannotLikeTwice() public {
+        photoMap.addPhoto("QmTestHash789", "41.8781,-87.6298");
+        photoMap.likePhoto(0);
+
+        // Low-level call returns false instead of stopping the test when it reverts.
+        (bool ok, ) = address(photoMap).call(abi.encodeWithSignature("likePhoto(uint256)", 0));
+        Assert.isFalse(ok, "Second like from the same wallet should revert");
+
+        (, , , uint likes) = photoMap.photos(0);
+        Assert.equal(likes, 1, "Like count should still be 1");
     }
 }
+
 

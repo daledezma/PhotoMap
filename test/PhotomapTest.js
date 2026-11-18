@@ -45,5 +45,22 @@ contract("PhotoMap", (accounts) => {
       assert(error.message.includes("revert"), "Expected a revert, got: " + error.message);
     }
   });
+
+  // Test 4: the same wallet cannot like a photo twice.
+  it("rejects a second like from the same wallet", async () => {
+    await photoMap.addPhoto("QmAliceHash", "41.8781,-87.6298", { from: alice });
+    await photoMap.likePhoto(0, { from: bob });
+
+    try {
+      await photoMap.likePhoto(0, { from: bob });
+      assert.fail("Expected the second like to revert");
+    } catch (error) {
+      assert(error.message.includes("Already liked"), "Expected 'Already liked' revert, got: " + error.message);
+    }
+
+    const photo = await photoMap.photos(0);
+    assert.equal(photo.likes.toNumber(), 1, "Like count should still be 1");
+  });
 });
+
 
