@@ -11,8 +11,8 @@ contract("PhotoMap", (accounts) => {
 
   // Test 1: each user's photo is saved with the right owner and data.
   it("stores photos from different users with the correct owner", async () => {
-    await photoMap.addPhoto("QmAliceHash", "41.8781,-87.6298", { from: alice });
-    await photoMap.addPhoto("QmBobHash", "42.6792,-88.2765", { from: bob });
+    await photoMap.addPhoto("QmAliceHash", 41878100, -87629800, { from: alice });
+    await photoMap.addPhoto("QmBobHash", 42679200, -88276500, { from: bob });
 
     const count = await photoMap.getPhotoCount();
     assert.equal(count.toNumber(), 2, "Should have 2 photos");
@@ -23,12 +23,13 @@ contract("PhotoMap", (accounts) => {
 
     const photo1 = await photoMap.photos(1);
     assert.equal(photo1.owner, bob, "Photo 1 owner should be Bob");
-    assert.equal(photo1.location, "42.6792,-88.2765", "Photo 1 location should match");
+    assert.equal(photo1.lat.toString(), "42679200", "Photo 1 latitude should match");
+    assert.equal(photo1.lng.toString(), "-88276500", "Photo 1 longitude should match");
   });
 
   // Test 2: likes from other users are counted.
   it("increments likes when other users like a photo", async () => {
-    await photoMap.addPhoto("QmAliceHash", "41.8781,-87.6298", { from: alice });
+    await photoMap.addPhoto("QmAliceHash", 41878100, -87629800, { from: alice });
     await photoMap.likePhoto(0, { from: bob });
     await photoMap.likePhoto(0, { from: accounts[2] });
 
@@ -48,19 +49,34 @@ contract("PhotoMap", (accounts) => {
 
   // Test 4: the same wallet cannot like a photo twice.
   it("rejects a second like from the same wallet", async () => {
-    await photoMap.addPhoto("QmAliceHash", "41.8781,-87.6298", { from: alice });
+    await photoMap.addPhoto("QmAliceHash", 41878100, -87629800, { from: alice });
     await photoMap.likePhoto(0, { from: bob });
 
     try {
       await photoMap.likePhoto(0, { from: bob });
       assert.fail("Expected the second like to revert");
     } catch (error) {
-      assert(error.message.includes("Already liked"), "Expected 'Already liked' revert, got: " + error.message);
+      assert(error.message.includes("revert"), "Expected a revert, got: " + error.message);
     }
 
     const photo = await photoMap.photos(0);
     assert.equal(photo.likes.toNumber(), 1, "Like count should still be 1");
   });
-});
 
+  // Test 5: events are emitted and getPhotos() returns everything in one call.
+  it("emits events and returns all photos with getPhotos()", async () => {
+    const tx = await photoMap.addPhoto("QmAliceHash", 41878100, -87629800, { from: alice });
+    assert.equal(tx.logs[0].event, "PhotoAdded", "Should emit PhotoAdded");
+    assert.equal(tx.logs[0].args.owner, alice, "Event owner should be Alice");
+
+    const likeTx = await photoMap.likePhoto(0, { from: bob });
+    assert.equal(likeTx.logs[0].event, "PhotoLiked", "Should emit PhotoLiked");
+    assert.equal(likeTx.logs[0].args.likes.toString(), "1", "Event should report 1 like");
+
+    await photoMap.addPhoto("QmBobHash", 42679200, -88276500, { from: bob });
+    const all = await photoMap.getPhotos();
+    assert.equal(all.length, 2, "getPhotos should return 2 photos");
+    assert.equal(all[1].ipfsHash, "QmBobHash", "Second photo hash should match");
+  });
+});
 

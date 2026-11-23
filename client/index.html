@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PhotoMap</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+  <style>
+    #map { height: 460px; border-radius: .375rem; cursor: crosshair; }
+    .photo-popup img { width: 200px; max-height: 160px; object-fit: cover; border-radius: 4px; }
+    .photo-popup .placeholder-img { width: 200px; height: 90px; background: #e9ecef; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; color: #6c757d; font-size: 12px; }
+    #photoList .list-group-item { cursor: pointer; }
+    #dropZone { border-style: dashed !important; cursor: pointer; }
+  </style>
 </head>
 <body class="bg-light">
   <nav class="navbar navbar-dark bg-dark">
@@ -20,6 +29,15 @@
   <div class="container py-4">
     <div id="status" class="alert alert-secondary small">Connect MetaMask to load the contract.</div>
 
+    <!-- Map -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Map <span class="text-muted small fw-normal">· click anywhere to set the photo location</span></span>
+        <span>Photos: <span id="count" class="badge bg-primary">0</span></span>
+      </div>
+      <div class="card-body p-2"><div id="map"></div></div>
+    </div>
+
     <div class="row g-4">
       <!-- Add photo -->
       <div class="col-md-5">
@@ -29,7 +47,7 @@
             <form id="addForm">
               <div class="mb-3">
                 <label class="form-label">Photo</label>
-                <div id="dropZone" class="border border-2 border-secondary-subtle rounded p-4 text-center bg-white" style="border-style:dashed !important;cursor:pointer">
+                <div id="dropZone" class="border border-2 border-secondary-subtle rounded p-4 text-center bg-white">
                   <img id="preview" class="img-fluid rounded mb-2 d-none" style="max-height:160px" alt="Selected photo preview">
                   <div id="dropText" class="text-muted">Drag &amp; drop a photo here<br><span class="small">or click to choose a file</span></div>
                   <input type="file" id="fileInput" accept="image/*" class="d-none">
@@ -40,8 +58,11 @@
                 <input id="ipfsHash" class="form-control small" placeholder="Drop a photo to generate" required>
               </div>
               <div class="mb-3">
-                <label for="location" class="form-label">Location (lat,lng)</label>
-                <input id="location" class="form-control" placeholder="41.8781,-87.6298" required>
+                <label for="location" class="form-label">Location (lat, lng)</label>
+                <div class="input-group">
+                  <input id="location" class="form-control" placeholder="Click the map" required>
+                  <button id="myLocationBtn" class="btn btn-outline-secondary" type="button" title="Use my location">📍 Me</button>
+                </div>
               </div>
               <button class="btn btn-primary w-100" type="submit">Pin Photo</button>
             </form>
@@ -52,10 +73,7 @@
       <!-- Photo list -->
       <div class="col-md-7">
         <div class="card">
-          <div class="card-header d-flex justify-content-between">
-            <span class="fw-semibold">Photos on the map</span>
-            <span>Count: <span id="count" class="badge bg-primary">0</span></span>
-          </div>
+          <div class="card-header fw-semibold">Photos <span class="text-muted small fw-normal">· click one to fly to it</span></div>
           <ul id="photoList" class="list-group list-group-flush">
             <li class="list-group-item text-muted">No photos yet.</li>
           </ul>
@@ -64,7 +82,9 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.4/ethers.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
+
